@@ -1,0 +1,50 @@
+.root {
+  display: flex;
+  align-items: center;
+  width: 158px;
+  justify-content: space-between;
+}
+
+.quattro {
+  width: 50px;
+  height: 50px;
+  background: #000;
+  padding: 17px 10px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .line {
+    height: 2.5px;
+    background: #fff;
+    width: 100%;
+
+    &_first {
+      margin-right: 0;
+      margin-left: auto;
+      width: 50%;
+    }
+
+    &_second {
+      width: 100%;
+    }
+
+    &_third {
+      width: 50%;
+      margin-right: 100%;
+    }
+  }
+}
+
+.text {
+  width: 96px;
+
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 112%;
+  text-align: justify;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+

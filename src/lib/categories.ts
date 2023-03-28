@@ -16,4 +16,4 @@ export const getSubCategories = async () =>
         }
     });
 
-export const getTitleByName = (item) => item.name.title[0];
+// export const getTitleByName = (item) => item.name.title[0];

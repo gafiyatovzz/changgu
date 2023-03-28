@@ -2,6 +2,8 @@ import Head from 'next/head'
 import {Inter} from 'next/font/google'
 
 import {getMainCategories, getSubCategories} from "@/lib/categories";
+import MainSection from "@/components/MainSection";
+import Categories from "@/components/Categories";
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -14,13 +16,16 @@ export default function Home({categories, subCategories}: any) {
                 <meta name="viewport" content="width=device-width, initial-scale=1"/>
             </Head>
             <main>
-
+                <MainSection
+                    categories={categories}
+                />
+                <Categories categories={categories} />
             </main>
         </>
   )
 }
 
-export async function getServerSideProps(ctx) {
+export async function getServerSideProps() {
     const categories = await getMainCategories();
     const subCategories = await getSubCategories();
 

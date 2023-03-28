@@ -1,20 +1,55 @@
 import {NOTION_URL, NOTION_V, DB_ID} from '@/lib/constants';
 
-type Category = {
-    name: {},
-    Tags: {
-        multi_select: [],
+type Tag = string;
+
+type Image = {
+    name: string,
+    url: string,
+}
+export type Category = {
+    Name: {
+        title: {
+            text: {
+                content: string,
+            }
+        }[],
     },
-    img: {},
+    Tags: {
+        multi_select: {
+            name: string
+        }[],
+    },
+    img: {
+        files: {
+            file: {
+                url: string,
+            },
+            name: string,
+        }[],
+    },
     isMainCategory: {
         checkbox: boolean,
     },
 }
 
-type Data = Category[];
+export type PreparedData = {
+    name: {
+        title: string,
+        type: string,
+    },
+    images: Image[],
+    tags: Tag[],
+    isMainCategory: boolean,
+};
+
+type ResultContentQuery = {
+    properties: Data
+}[]
+
+type Data = Category;
 
 async function fetchAPI(body: {}, query= '') {
-    const res = await fetch(`${NOTION_URL}${query}`, {
+    const {results} = await fetch(`${NOTION_URL}${query}`, {
         method: 'POST',
         headers: {
             'Notion-Version': NOTION_V,
@@ -23,20 +58,19 @@ async function fetchAPI(body: {}, query= '') {
         },
         body: JSON.stringify(body),
     })
-    const json = await res.json()
+        .then(response => response.json())
+        .catch(err => {
+            console.log('Что-то пошло не так при запросе к Notion\n');
+            console.error(err)
+            throw new Error('Failed to fetch API')
+        })
 
-    if (json.errors) {
-        console.log('Что-то пошло не так при запросе к Notion\n');
-        console.error(json.errors)
-        throw new Error('Failed to fetch API')
-    }
-
-    return json.results
+    return results
 }
 
-const normalizeDatabaseContentQuery = result => result.map(({properties}) => prepareData(properties));
+const normalizeDatabaseContentQuery = (result: ResultContentQuery) => result.map(({properties}) => prepareData(properties));
 
-export const prepareData = ({Name, Tags, img, isMainCategory}: Data) => {
+export const prepareData = ({Name, Tags, img, isMainCategory}: Data): PreparedData => {
     const {files: thumbnails} = img;
     return {
         name: {
