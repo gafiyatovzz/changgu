@@ -2,19 +2,29 @@ import {NOTION_URL, NOTION_V, DB_ID} from '@/lib/constants';
 
 type Tag = string;
 
+type ObjectType = string;
+
 type Image = {
     name: string,
     url: string,
 }
 export type Category = {
-    Name: {
+    subItem: {
+        id: string,
+        type: string,
+        relation: {
+            id: string,
+        }[],
+        has_more: boolean
+    },
+    name: {
         title: {
             text: {
                 content: string,
             }
         }[],
     },
-    Tags: {
+    tags: {
         multi_select: {
             name: string
         }[],
@@ -33,6 +43,8 @@ export type Category = {
 }
 
 export type PreparedData = {
+    type: ObjectType,
+    id: string,
     name: {
         title: string,
         type: string,
@@ -40,17 +52,26 @@ export type PreparedData = {
     images: Image[],
     tags: Tag[],
     isMainCategory: boolean,
+    subItems: [],
+    parentCategory: string,
 };
 
 type ResultContentQuery = {
-    properties: Data
+    properties: Data,
+    object: ObjectType,
+    id: string,
 }[]
 
 type Data = Category;
 
-async function fetchAPI(body: {}, query= '') {
-    const {results} = await fetch(`${NOTION_URL}${query}`, {
-        method: 'POST',
+type FetchData = {
+    body?: {},
+    path: string,
+    method: 'POST' | 'GET' | 'PUT' | 'DELETE' | 'PATCH'
+}
+async function fetchAPI({body, path = '', method}: FetchData) {
+    const results = await fetch(`${NOTION_URL}${path}`, {
+        method,
         headers: {
             'Notion-Version': NOTION_V,
             'Content-Type': 'application/json',
@@ -58,41 +79,77 @@ async function fetchAPI(body: {}, query= '') {
         },
         body: JSON.stringify(body),
     })
-        .then(response => response.json())
+        .then(response => {
+            return response.json();
+        })
         .catch(err => {
             console.log('Что-то пошло не так при запросе к Notion\n');
-            console.error(err)
+            console.error('ERROR>>', err)
             throw new Error('Failed to fetch API')
         })
-
     return results
 }
 
-const normalizeDatabaseContentQuery = (result: ResultContentQuery) => result.map(({properties}) => prepareData(properties));
+const normalizeCategoryData = (result: ResultContentQuery) =>
+    result.map(({properties, object, id}) => prepareCategoryData({properties, object, id}));
+const normalizeSearchResponse = (result: ResultContentQuery) =>
+    result.map(({properties, object, id}) => prepareCategoryData({properties, object, id}));
 
-export const prepareData = ({Name, Tags, img, isMainCategory}: Data): PreparedData => {
-    const {files: thumbnails} = img;
+export const prepareCategoryData = ({properties, object, id}: ResultContentQuery): PreparedData => {
+    const {name, tags, img, isMainCategory, subItem} = properties;
+    const {files: thumbnails} = img ?? {files: []};
+
     return {
+        id,
+        subItems: subItem.relation.map(({id}) => id),
+        type: object,
         name: {
-            title: Name.title[0].text.content,
+            title: name.title ? name.title[0].text.content : name.title,
             type: 'title',
         },
-        images: thumbnails.map(item => ({
+        images: thumbnails.map(item => item.name && ({
             url: item.file.url,
             name: item.name,
         })),
-        tags: Tags.multi_select.map(tag => tag.name),
-        isMainCategory: isMainCategory.checkbox,
+        tags: tags.multi_select.length ? tags.multi_select.map(tag => tag.name) : tags.multi_select,
+        isMainCategory: isMainCategory.checkbox ?? false,
     };
 };
 
 export async function getDatabaseContentByQuery(query: {}) {
-    const result = await fetchAPI(
-        {
+    const {results} = await fetchAPI({
+        method: 'POST',
+        body: {
             filter: query,
         },
-        `/databases/${DB_ID}/query`,
-    )
+        path: `/databases/${DB_ID}/query`,
+    })
 
-    return normalizeDatabaseContentQuery(result);
+    return normalizeCategoryData(results);
 }
+
+type Result = any;
+
+export const getPageById = async (pageId: string): Promise<Result> => {
+    const result = await fetchAPI({
+        method: 'GET',
+        path: `/pages/${pageId}`,
+    })
+
+    return result;
+}
+
+// export async function searchDatabaseByQuery(query: string) {
+//     return normalizeSearchResponse(await fetchAPI(
+//             {
+//                 query,
+//             },
+//             `/search`,
+//         )
+//     );
+// }
+
+export const getCategoryName = ({category}: PreparedData) => category.name;
+export const getCategoryImageUrl = ({category}: PreparedData) => category.images;
+export const getCategoryFirstImageUrl = ({category}: PreparedData) => category.images[0];
+export const getDatabaseIdFromCategory = (category: PreparedData) => category.id;

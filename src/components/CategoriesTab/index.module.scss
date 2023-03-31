@@ -1,0 +1,32 @@
+.root {
+  display: grid;
+  grid-template-columns: 49% 49%;
+  grid-gap: 10px;
+  padding: 70px 15px;
+}
+
+.category {
+  position: relative;
+  display: flex;
+  border: .5px solid #E0E0E0;
+
+  .name {
+    position: absolute;
+    top: 7px;
+    left: 10px;
+    width: 50%;
+
+    font-family: 'Helvetica Neue';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 112%;
+    letter-spacing: -0.03em;
+  }
+
+  .image {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+}

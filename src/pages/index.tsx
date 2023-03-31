@@ -1,13 +1,21 @@
 import Head from 'next/head'
 import {Inter} from 'next/font/google'
+import {useSelector} from 'react-redux'
 
-import {getMainCategories, getSubCategories} from "@/lib/categories";
+import {getItemsFromCategory, getMainCategories, getSubCategories} from "@/lib/categories";
 import MainSection from "@/components/MainSection";
-import Categories from "@/components/Categories";
+import CategoriesTab from "@/components/CategoriesTab";
+import CategoriesList from "@/components/CategoriesList";
+import {searchDatabaseByQuery} from "@/lib/notion";
+import {useEffect, useState} from "react";
 
 const inter = Inter({ subsets: ['latin'] })
 
-export default function Home({categories, subCategories}: any) {
+export default function Home(props: any) {
+    // const [categories, setCategories] = useState([]);
+    // useEffect(() => {
+    //     setCategories(props.categories);
+    // }, [props.categories, categories])
     return (
         <>
             <Head>
@@ -17,22 +25,29 @@ export default function Home({categories, subCategories}: any) {
             </Head>
             <main>
                 <MainSection
-                    categories={categories}
+                    categories={props.categories}
                 />
-                <Categories categories={categories} />
+                <CategoriesTab categories={props.categories} />
+                {/*<CategoriesList categories={props.subCategories} />*/}
             </main>
         </>
   )
 }
 
 export async function getServerSideProps() {
+    // TODO: черновик отрефачить и перенести в api
+    // главные категории
     const categories = await getMainCategories();
-    const subCategories = await getSubCategories();
+    // подкатегории
+    const subCategories = await getSubCategories(categories);
+    // товарка
+    const items = await getItemsFromCategory(subCategories);
 
     return {
         props: {
             categories: categories ?? [],
             subCategories: subCategories ?? [],
+            items,
         },
     }
 }
